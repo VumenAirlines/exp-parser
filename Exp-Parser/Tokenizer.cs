@@ -50,7 +50,7 @@ public class Tokenizer
                     if (!match.Success) continue;
                     pos += match.Value.Length;
 
-                    if (type != null)
+                    if (type is not null)
                         tokens.Add(new Token(type, match.Value));
 
                     matchFound = true;

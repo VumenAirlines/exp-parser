@@ -1,45 +1,39 @@
 namespace Exp_Parser;
 
-public class Parser
+public class Parser(List<Token> tokens)
 {
-    private readonly List<Token> _tokens;
-    private int _pos;
-  
+    private int _pos = 0;
 
-    public Parser(List<Token> tokens)
-    {
-        _tokens = tokens;
-        _pos = 0;
-    }
 
     public INodeType Parse()
     {
         INodeType result = Expression();
         
-        if (_pos < _tokens.Count)
-            throw new Exception($"Unexpected token '{_tokens[_pos].Type}' at position {_pos}");
+        if (_pos < tokens.Count)
+            throw new Exception($"Unexpected token '{tokens[_pos].Type}' at position {_pos}");
             
         return result;
     }
 
     private Token Eat(params string[] expectedTypes)
     {
-        if (_pos >= _tokens.Count)
-            throw new Exception($"Unexpected end of input; expected one of {string.Join(", ", expectedTypes)}");
+        if (_pos >= tokens.Count)
+            throw new Exception($"Unexpected end of input; expected one of {string.Join(", ", expectedTypes)} at {_pos}");
 
-        Token token = _tokens[_pos];
+        Token token = tokens[_pos];
 
         if (!expectedTypes.Contains(token.Type))
-            throw new Exception($"Expected {string.Join(" or ", expectedTypes)}, but found '{token.Type}'");
+            throw new Exception($"Expected {string.Join(" or ", expectedTypes)}, but found '{token.Type}' at {_pos}");
 
         _pos++;
         return token;
     }
 
     private bool Is(params string[] types) =>
-         _pos < _tokens.Count && types.Contains(_tokens[_pos].Type);
+         _pos < tokens.Count && types.Contains(tokens[_pos].Type);
 
-    private Token Peek() => _pos < _tokens.Count ? _tokens[_pos] : null;
+    private Token Peek() => (_pos < tokens.Count ? tokens[_pos] : null) ?? throw new Exception($"Unexpected end of input at {_pos}");
+    
     
 
     // Grammar: Expression -> Addition -> MultiplicationOrDivision -> ImplicitMultiplication -> Exponentiation -> Primary
@@ -145,8 +139,8 @@ public class Parser
                 result = new ExprStringNode(innerExpr);
                 break;
             default:
-                throw new Exception("Expected a number, identifier, or parenthesized expression");
-                break;
+                throw new Exception($"Expected a number, identifier, or parenthesized expression at {_pos}");
+                
         }
         return result;
     }

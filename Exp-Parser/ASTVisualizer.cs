@@ -26,7 +26,7 @@ public class AstVisualizer : IVisitor
 
     private void VisitNode(INodeType node, bool isLast)
     {
-        var savedIndent = _indent;
+        string savedIndent = _indent;
         _builder.Append(_indent);
         _builder.Append(isLast ? "└── " : "├── ");
         _indent += isLast ? "    " : "│   ";
