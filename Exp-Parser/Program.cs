@@ -1,4 +1,7 @@
-﻿namespace Exp_Parser;
+﻿using Exp_Parser.Engine;
+using Exp_Parser.Model.Tokens;
+
+namespace Exp_Parser;
 class Program
 {
     static string[] expressions =
@@ -10,12 +13,13 @@ class Program
 
     static void Main(string[] args)
     {
-     
+
         Tokenizer tokenizer = new Tokenizer();
-        AstVisualizer visualizer = new AstVisualizer();
-        List<string> res = expressions.Select(testCase => visualizer.Visualize(new Parser(tokenizer.Tokenize(testCase)).Parse())).ToList();
-        Console.WriteLine(res[0]);
-        
+        var asd = tokenizer.Tokenize("-1+3*4");//(5x/250)^2sin(35x)*log(10,9)*-1");
+
+        var parser = Parser.BuildTree(asd);
+
+
         
             
         Console.ReadKey();

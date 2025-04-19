@@ -1,14 +1,23 @@
 namespace Exp_Parser;
 
-using System;
-using System.Text;
-using System.Collections.Generic;
 
 
 using System;
 using System.Text;
 using System.Collections.Generic;
 
+using Model.Nodes;
+using System;
+using System.Text;
+using System.Collections.Generic;
+internal interface IVisitor
+{
+    void Visit(BinaryNode binaryNode);
+    void Visit(LiteralNode numberNode);
+    void Visit( UnaryNode unaryNode);
+    void Visit(CallNode callNode);
+    void Visit(VariableNode variableNode);
+}
 public class AstVisualizer : IVisitor
 {
     private readonly StringBuilder _builder = new();
@@ -35,7 +44,7 @@ public class AstVisualizer : IVisitor
         _indent = savedIndent;
     }
 
-    public void Visit(NumberNode numberNode)
+    public void Visit(LiteralNode numberNode)
     {
         _builder.AppendLine($"NumberNode: {numberNode.Value}");
     }
@@ -66,4 +75,3 @@ public class AstVisualizer : IVisitor
         _builder.AppendLine($"ExprStringNode: \"{exprStringNode.Expr}\"");
     }
 }
-
