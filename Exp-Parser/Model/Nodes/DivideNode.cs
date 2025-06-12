@@ -2,10 +2,14 @@ using System.Linq.Expressions;
 
 namespace Exp_Parser.Model.Nodes;
 
-internal class DivideNode() : BinaryNode(3)
+public class DivideNode() : BinaryNode(3,"/")
 {
     internal override Expression BuildExpression(Expression? callerExpression = null)
     {
-        throw new NotImplementedException();
+        return Expression.Divide(Left?.BuildExpression(callerExpression), Right?.BuildExpression(callerExpression));
+    }
+    public override void  Accept(IVisitor visitor)
+    {
+        visitor.Visit(this);
     }
 }

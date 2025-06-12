@@ -7,13 +7,10 @@ internal class Tokenizer
 {
     private readonly TokenList _result = [];
     private int _characterPosition;
-    //private static readonly IDictionary<string, Type> availableTypes = new Dictionary<string, Type>(Keywords.BuiltInTypes);
-
-    //internal static void AddTypeMap(string alias, Type type) => availableTypes[alias ?? type?.Name ?? throw new ArgumentNullException(nameof(type))] = type;
     public TokenList Tokenize(string input)
     {
-       string trimmed=  Regex.Replace(input, @"\s+", string.Empty);
-        for (_characterPosition = 0; _characterPosition < input.Length;)
+       string trimmed = Regex.Replace(input, @"\s+", string.Empty);
+        for (_characterPosition = 0; _characterPosition < trimmed.Length;)
             if (!IsValidToken(trimmed)) 
                 throw new ArgumentException($"Invalid token at position {_characterPosition + 1}.", nameof(input));
         return _result;
@@ -23,16 +20,12 @@ internal class Tokenizer
 
     private bool IsVariable(string input)
     {
-        bool isVariable = TryMakeToken(input[_characterPosition..], @"^[x]",x  => 
+       return TryMakeToken(input[_characterPosition..], @"^[x]",x  => 
             new CallToken(x,"Property"));
-        return isVariable;
     }
     private bool IsFunctionCall(string input)
     {
-        if(IsVariable(input)) return true;
-        bool isFunctionCall =TryMakeToken(input[_characterPosition..], @"^[\w]*", x=> new CallToken(x,"Function") );
-        
-        return isFunctionCall;
+        return IsVariable(input) || TryMakeToken(input[_characterPosition..], @"^[\w]*", x=> new CallToken(x,"Function") );
     }
 
     private bool IsSymbol(string token)
@@ -45,7 +38,7 @@ internal class Tokenizer
             case "-" when IsUnary():
                 _result.Add(new OperationToken("[-]"));
                 break;
-            case "(" when IsFunctionParen(out _):
+            case "(" when IsFunctionParen():
             default:
                 _result.Add(new OperationToken(token));
                 break;
@@ -55,25 +48,33 @@ internal class Tokenizer
     }
     private bool IsUnary()
     {
-        return !_result.Any() || (_result.TokenAt(_result.Count - 1) is OperationToken);
+        return !_result.Any() || _result.TokenAt(_result.Count - 1) is OperationToken { ClosingBracket: false };
     }
 
-    private bool IsFunctionParen(out CallToken? token)
+    private bool IsFunctionParen()
     {
-        token = (_result.TokenAt(_result.Count - 1) is CallToken candidate) ? candidate : null;
+        CallToken? token = (_result.TokenAt(_result.Count - 1) is CallToken candidate) ? candidate : null;
         return token != null;
     }
 
     private bool IsNumber(string input)
     {
-        bool isDecimal = TryMakeToken(input[_characterPosition..], @"^((\d*\.\d+)|(\d+\.\d*))",x  => 
-            new LiteralToken<double>(Convert.ToDouble(x)));
+        bool isDecimal = TryMakeToken(input[_characterPosition..], @"^((\d*\.\d+)|(\d+\.\d*))", x =>
+        {
+            if (!double.TryParse(x, out double result))
+                throw new Exception();
+            return new LiteralToken<double>(result);
+        });
         if (isDecimal) return true;
-        bool isInt = TryMakeToken(input[_characterPosition..], @"^\d+",x  => new LiteralToken<int>(Convert.ToInt32(x)));
-        return isInt;
+        return TryMakeToken(input[_characterPosition..], @"^\d+",x  =>
+        {
+            if (!double.TryParse(x, out double result))
+                throw new Exception();
+            return new LiteralToken<double>(result);
+        });
     }
 
-    private bool TryMakeToken(string input, string regex, Func<string,Token> make)
+    private bool TryMakeToken(string input, string regex, Func<string,Token?> make)
     {
         Match match = Regex.Match(input, regex, RegexOptions.IgnoreCase);
         if (!match.Success) return false;

@@ -7,69 +7,99 @@ using Model.Nodes;
 
 internal static class Parser
 {
-    
+    //todo: (x+1)x dont work
     internal static LambdaExpression BuildExpressionFor<T>(TokenList tokens, string? parameterName)
     {
         Node root = BuildTree(tokens);
-        ParameterExpression parameterExpression = parameterName is not null ? Expression.Parameter(typeof(T)) : Expression.Parameter(typeof(T), parameterName);
+        ParameterExpression parameterExpression = parameterName is  null ? Expression.Parameter(typeof(T)) : Expression.Parameter(typeof(T), parameterName);
         Expression body = root.BuildExpression(parameterExpression);
+        
         return Expression.Lambda(body, parameterExpression);
     }
 
-    public static Node BuildTree(TokenList tokens)
+    private static Node BuildTree(TokenList tokens)
     {
-        NodeStack nodes = [];
-        while (tokens.Any() && !(tokens.Current.ClosingBracket || tokens.Current.IsSeparator))
+        NodeStack nodes = new NodeStack();
+        Node? res = null;
+        try
         {
-            switch (tokens.Current.OpeningBracket)
+            while (tokens.Any() && !(tokens.Current.ClosingBracket || tokens.Current.IsSeparator))
             {
-                case true when nodes.LastAdded is CallNode method:
-                    tokens.MoveNext();
-                    ProcessParameters(tokens, method);
-                    break;
-                case true when nodes.LastAdded is LiteralNode or VariableNode :
-                    tokens.MoveNext();
-                    ProcessImplicitMult(nodes,tokens);
-                    break;
-                case true:
-                    tokens.MoveNext();
-                    ProcessExpression(tokens, nodes);
-                    break;
-                case false when nodes.LastAdded is LiteralNode or VariableNode or CallNode :
-                    ProcessImplicitMult(nodes,tokens);
-                    nodes.Add(tokens.Current.CreateNode());
-                    break;
-                default:
-                    nodes.Add(tokens.Current.CreateNode());
-                    break;
+                Process(tokens,nodes);
+                tokens.MoveNext();
             }
 
-            tokens.MoveNext();
+            res = nodes.Root;
+            if (res is null)
+                throw new Exception();
+            return res;
         }
-        return nodes.Pop();
+        catch(Exception e)
+        {
+            if(res is BinaryNode node)
+                Reset(node);
+            throw;
+        }
+        finally
+        {
+            nodes.Reset();
+        }
     }
 
-    private static void ProcessImplicitMult( NodeStack nodes, TokenList tokenList)
+    private static void Process(TokenList tokens , NodeStack nodes)
+    {
+        switch (tokens.Current.OpeningBracket)
+        {
+            case true when nodes.LastAdded is CallNode method:
+                tokens.MoveNext();
+                ProcessParameters(tokens, method);
+                break;
+            case true when nodes.LastAdded is LiteralNode or ExponentNode:
+                tokens.MoveNext();
+                ProcessImplicitMult(nodes, tokens);
+                ProcessExpression(tokens, nodes);
+                break;
+            case true when nodes.LastAdded is VariableNode:
+                tokens.MoveNext();
+                if (!ProcessImplicitMult(nodes, tokens))
+                {
+                    Node childNode = new MultiplyNode();
+                    nodes.Add(childNode);
+                }
+                ProcessExpression(tokens, nodes);
+                break;
+            case true:
+                tokens.MoveNext();
+                ProcessExpression(tokens, nodes);
+                break;
+            case false when nodes.LastAdded is LiteralNode or VariableNode or CallNode:
+                ProcessImplicitMult(nodes, tokens);
+                nodes.Add(tokens.Current.CreateNode());
+                break;
+            default:
+                nodes.Add(tokens.Current.CreateNode());
+                break;
+        }
+    }
+    private static bool ProcessImplicitMult( NodeStack nodes, TokenList tokenList)
     {
         //todo: add (x+1)(x-1) support
         switch (nodes.LastAdded)
         {
             case VariableNode when tokenList.Current is not CallToken{NodeType:"Function"}:
-            case LiteralNode when tokenList.Current is not CallToken:
-            case CallNode when tokenList.Current is not CallToken:
-                return;
+            case LiteralNode or CallNode when tokenList.Current is not CallToken:
+                return false;
             default:
                 Node childNode = new MultiplyNode();
                 nodes.Add(childNode);
-                break;
-            
+                return true;
         }
     }
     private static void ProcessParameters(TokenList tokens, CallNode callNode)
     {
         while (!tokens.Current.ClosingBracket) {
             Node childNode = BuildTree(tokens);
-            //callNode.Parameters.Add(childNode);
+            callNode.Parameters.Add(childNode);
             if (tokens.Current.IsSeparator) {
                 tokens.MoveNext();
             }
@@ -81,6 +111,18 @@ internal static class Parser
         Node childNode = BuildTree(tokens);
         childNode.RaisePrec();
         nodes.Add(childNode);
+    }
+    private static void Reset(BinaryNode? node)
+    {
+        if (node == null) return;
+    
+        if (node.Left is BinaryNode leftBinary)
+            Reset(leftBinary);
+        if (node.Right is BinaryNode rightBinary)
+            Reset(rightBinary);
+        
+        node.Left = null;
+        node.Right = null;
     }
     
 }

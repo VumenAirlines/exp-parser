@@ -1,4 +1,5 @@
-﻿using Exp_Parser.Engine;
+﻿using System.Reflection;
+using Exp_Parser.Engine;
 using Exp_Parser.Model.Tokens;
 
 namespace Exp_Parser;
@@ -13,12 +14,21 @@ class Program
 
     static void Main(string[] args)
     {
+        MathExpressionTestCases.RunAllTests(test =>
+        {
+                Console.WriteLine("---------"+test+"----------");
+                return Parser.BuildExpressionFor<double>(new Tokenizer().Tokenize(test),"x").Compile() switch
+                {
+                    Func<double, double> func => func,
+                    _ => throw new Exception()
+                };
+        });
+        
+        //var asd = tokenizer.Tokenize("");//(5x/250)^2sin(35x)*log(10,9)*-1");
 
-        Tokenizer tokenizer = new Tokenizer();
-        var asd = tokenizer.Tokenize("-1+3*4");//(5x/250)^2sin(35x)*log(10,9)*-1");
 
-        var parser = Parser.BuildTree(asd);
-
+        //var a = Parser.BuildExpressionFor<double>(new Tokenizer().Tokenize("((x + 1) * 2) - 1"), "x").Compile();
+       
 
         
             

@@ -1,10 +1,18 @@
 namespace Exp_Parser.Model.Nodes;
 using System.Linq.Expressions;
-internal abstract class LiteralNode() : Node(99);
+public abstract class LiteralNode() : Node(99);
 
-internal class LiteralNode<T>(T value) :LiteralNode()
+public class LiteralNode<T>(T value) :LiteralNode
 {
-    internal T Value { get; } = value;
+    private T Value { get; } = value;
     
     internal override Expression BuildExpression(Expression? callerExpression = null) => Expression.Constant(Value);
+    public override string? ToString()
+    {
+        return Value != null ? Value.ToString() : null;
+    }
+    public override void  Accept(IVisitor visitor)
+    {
+        visitor.Visit(this);
+    }
 }

@@ -4,6 +4,10 @@ internal class NodeStack : Stack<Node>
 {
     internal Node? LastAdded;
 
+    internal Node? Root => this.Any() ? Peek() : null;
+
+    private BinaryNode? _prevBinary;
+//-1+4*5^3
     internal void Add(Node node)
     {
         if (!this.Any())
@@ -12,12 +16,26 @@ internal class NodeStack : Stack<Node>
             case BinaryNode { IsClosed: true }:
                 AddToRoot(node);
                 break;
+            case ExponentNode exponentNode when _prevBinary is ExponentNode topExponent:
+                AddNodeToRootRight(topExponent, exponentNode);
+                break;
+            case ExponentNode exponentNode when _prevBinary  is not null:
+                if (_prevBinary.Precedence < exponentNode.Precedence)
+                    
+                    AddRootToNodeLeft(exponentNode);
+
+                else
+                    AddNodeToRootRight(_prevBinary, exponentNode);
+                
+                break;
+            case ExponentNode exponentNode:
+                AddRootToNodeLeft(exponentNode);
+                break;
             case BinaryNode binaryNode when Peek() is BinaryNode root && root.Precedence <= binaryNode.Precedence:
                 AddRootToNodeLeft(binaryNode);
                 break;
             case BinaryNode binaryNode when Peek() is BinaryNode root:
-                binaryNode.Left ??= root.Right;
-                root.Right = binaryNode;
+                AddNodeToRootRight(root,binaryNode);
                 break;
             case BinaryNode binaryNode:
                 AddRootToNodeLeft(binaryNode);
@@ -26,6 +44,8 @@ internal class NodeStack : Stack<Node>
                 AddToRoot(node);
                 break;
         }
+
+        if (node is BinaryNode binNode) _prevBinary = binNode;
         LastAdded = node;
     }
 
@@ -39,5 +59,19 @@ internal class NodeStack : Stack<Node>
     {
         node.Left = Pop();
         Push(node);
+        
+    }
+    private void AddNodeToRootRight(BinaryNode root, BinaryNode node)
+    {
+        node.Left ??= root.Right;
+        root.Right = node;
+        //Push(node);
+    }
+
+    public void Reset()
+    {
+        Clear();
+        LastAdded = null;
+        _prevBinary = null;
     }
 }

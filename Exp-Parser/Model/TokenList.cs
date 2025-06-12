@@ -10,14 +10,14 @@ internal class TokenList : List<Token>
     internal Token Current => this[0];
     internal void MoveNext() => RemoveAt(0);
 
-    public static readonly IReadOnlyDictionary<string, Func<Node>> SupportedOperators = new Dictionary<string, Func<Node>>
+    public static readonly IReadOnlyDictionary<string, Func<Node>?> SupportedOperators = new Dictionary<string, Func<Node>?>
     {
         {"[-]",()=>new NegateNode()},
         {"+", () =>new AddNode()},
         {"-", () => new SubtractNode()},
         {"*", () => new MultiplyNode()},
         {"/", () => new DivideNode()},
-        {"^",null},
+        {"^",(() => new ExponentNode())},
         {",", null},
         {"(", null},
         {")", null},

@@ -10,7 +10,7 @@ using Model.Nodes;
 using System;
 using System.Text;
 using System.Collections.Generic;
-internal interface IVisitor
+public interface IVisitor
 {
     void Visit(BinaryNode binaryNode);
     void Visit(LiteralNode numberNode);
@@ -24,7 +24,7 @@ public class AstVisualizer : IVisitor
     private string _indent = "";
     private bool _isLast = true;
 
-    public string Visualize(INodeType root)
+    public string Visualize(Node root)
     {
         _builder.Clear();
         _indent = "";
@@ -33,7 +33,7 @@ public class AstVisualizer : IVisitor
         return _builder.ToString();
     }
 
-    private void VisitNode(INodeType node, bool isLast)
+    private void VisitNode(Node node, bool isLast)
     {
         string savedIndent = _indent;
         _builder.Append(_indent);
@@ -46,32 +46,34 @@ public class AstVisualizer : IVisitor
 
     public void Visit(LiteralNode numberNode)
     {
-        _builder.AppendLine($"NumberNode: {numberNode.Value}");
+        _builder.AppendLine($"NumberNode: {numberNode.ToString()}");
     }
 
-    public void Visit(IdentifierNode variableNode)
+    public void Visit(UnaryNode unaryNode)
     {
-        _builder.AppendLine($"IdentifierNode: {variableNode.Name}");
+        _builder.AppendLine($"NegateNode: -{unaryNode.Child}");
+    }
+
+    public void Visit(VariableNode variableNode)
+    {
+        _builder.AppendLine($"IdentifierNode: {variableNode.ToString()}");
     }
 
     public void Visit(BinaryNode binaryNode)
     {
         _builder.AppendLine($"BinaryNode: {binaryNode.Op}");
-        VisitNode(binaryNode.Left, false);
-        VisitNode(binaryNode.Right, true);
+        if (binaryNode?.Left != null) VisitNode(binaryNode.Left, false);
+        if (binaryNode?.Right != null) VisitNode(binaryNode.Right, true);
     }
 
     public void Visit(CallNode callNode)
     {
-        _builder.AppendLine($"CallNode: {callNode.FunctionName}");
-        for (int i = 0; i < callNode.Arguments.Count; i++)
+        _builder.AppendLine($"CallNode: {callNode.Name}");
+        for (int i = 0; i < callNode.Parameters.Count; i++)
         {
-            VisitNode(callNode.Arguments[i], i == callNode.Arguments.Count - 1);
+            VisitNode(callNode.Parameters[i], i == callNode.Parameters.Count - 1);
         }
     }
 
-    public void Visit(ExprStringNode exprStringNode)
-    {
-        _builder.AppendLine($"ExprStringNode: \"{exprStringNode.Expr}\"");
-    }
+   
 }
