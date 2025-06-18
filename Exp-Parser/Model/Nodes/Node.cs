@@ -2,7 +2,7 @@ using System.Linq.Expressions;
 
 namespace Exp_Parser.Model.Nodes;
 
-public abstract class Node(int precedence)
+internal abstract class Node(int precedence)
     {
         internal int Precedence { get; private set; } = precedence;
 

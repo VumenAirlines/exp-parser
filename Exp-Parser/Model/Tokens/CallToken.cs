@@ -9,7 +9,7 @@ internal class CallToken : Token
         _name = name;
         NodeType = type;
     }
-    public string NodeType { get; set; }
+    internal string NodeType { get; set; }
 
     internal override Node CreateNode() => NodeType == "Function" ?  new CallNode(_name) : new VariableNode(_name);
     

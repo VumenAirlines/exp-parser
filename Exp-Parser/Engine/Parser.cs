@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Exp_Parser.Model.Tokens;
 
 namespace Exp_Parser.Engine;
@@ -5,19 +6,30 @@ using System.Linq.Expressions;
 using Model;
 using Model.Nodes;
 
-internal static class Parser
+public class Parser : IExpParser
 {
     //todo: (x+1)x dont work
-    internal static LambdaExpression BuildExpressionFor<T>(TokenList tokens, string? parameterName)
+    private static readonly ConcurrentDictionary<string, Delegate> CompiledExpressions = new();
+    private readonly ParameterExpression _parameterExpression = Expression.Parameter(typeof(double), "x");
+
+    //todo: (x+1)x dont work
+    public Delegate BuildExpressionFor<T>(TokenList tokens, string? parameterName, string? input)
     {
+       
+        if (input is not null && CompiledExpressions.TryGetValue(input, out var cached))
+            return cached;
         Node root = BuildTree(tokens);
-        ParameterExpression parameterExpression = parameterName is  null ? Expression.Parameter(typeof(T)) : Expression.Parameter(typeof(T), parameterName);
-        Expression body = root.BuildExpression(parameterExpression);
+        Expression body = root.BuildExpression(_parameterExpression);
+
+        Delegate result = Expression.Lambda(body, _parameterExpression).Compile();
         
-        return Expression.Lambda(body, parameterExpression);
+        if (input is not null)
+            CompiledExpressions.GetOrAdd(input, _ => result);
+        
+        return result;
     }
 
-    private static Node BuildTree(TokenList tokens)
+    private Node BuildTree(TokenList tokens)
     {
         NodeStack nodes = new NodeStack();
         Node? res = null;
@@ -46,7 +58,7 @@ internal static class Parser
         }
     }
 
-    private static void Process(TokenList tokens , NodeStack nodes)
+    private void Process(TokenList tokens , NodeStack nodes)
     {
         switch (tokens.Current.OpeningBracket)
         {
@@ -81,7 +93,7 @@ internal static class Parser
                 break;
         }
     }
-    private static bool ProcessImplicitMult( NodeStack nodes, TokenList tokenList)
+    private bool ProcessImplicitMult( NodeStack nodes, TokenList tokenList)
     {
         //todo: add (x+1)(x-1) support
         switch (nodes.LastAdded)
@@ -95,7 +107,7 @@ internal static class Parser
                 return true;
         }
     }
-    private static void ProcessParameters(TokenList tokens, CallNode callNode)
+    private void ProcessParameters(TokenList tokens, CallNode callNode)
     {
         while (!tokens.Current.ClosingBracket) {
             Node childNode = BuildTree(tokens);
@@ -106,13 +118,13 @@ internal static class Parser
         }
     }
 
-    private static void ProcessExpression(TokenList tokens, NodeStack nodes)
+    private void ProcessExpression(TokenList tokens, NodeStack nodes)
     {
         Node childNode = BuildTree(tokens);
         childNode.RaisePrec();
         nodes.Add(childNode);
     }
-    private static void Reset(BinaryNode? node)
+    private void Reset(BinaryNode? node)
     {
         if (node == null) return;
     

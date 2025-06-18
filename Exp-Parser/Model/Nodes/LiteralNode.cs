@@ -1,8 +1,8 @@
 namespace Exp_Parser.Model.Nodes;
 using System.Linq.Expressions;
-public abstract class LiteralNode() : Node(99);
+internal abstract class LiteralNode() : Node(99);
 
-public class LiteralNode<T>(T value) :LiteralNode
+internal class LiteralNode<T>(T value) :LiteralNode
 {
     private T Value { get; } = value;
     
@@ -11,7 +11,7 @@ public class LiteralNode<T>(T value) :LiteralNode
     {
         return Value != null ? Value.ToString() : null;
     }
-    public override void  Accept(IVisitor visitor)
+    public override void Accept(IVisitor visitor)
     {
         visitor.Visit(this);
     }

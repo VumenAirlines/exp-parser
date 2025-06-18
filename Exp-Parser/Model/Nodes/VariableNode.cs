@@ -2,10 +2,11 @@ using System.Linq.Expressions;
 
 namespace Exp_Parser.Model.Nodes;
 
-public class VariableNode(string name) : Node(99)
+internal class VariableNode(string name) : Node(99)
 {
    
     private string Name { get; } = name;
+    //todo:3x
     internal override Expression BuildExpression(Expression? callerExpression = null)
     {
         return callerExpression switch
@@ -17,7 +18,7 @@ public class VariableNode(string name) : Node(99)
     }
 
     public override string ToString() => Name;
-    public override void  Accept(IVisitor visitor)
+    public override void Accept(IVisitor visitor)
     {
         visitor.Visit(this);
     }

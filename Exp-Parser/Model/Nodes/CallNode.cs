@@ -5,11 +5,12 @@ using System.Reflection;
 namespace Exp_Parser.Model.Nodes;
 
 
-public class CallNode(string name) : Node(1)
+internal class CallNode(string name) : Node(1)
 {
     //todo: optimize for log(2,x) and such
-    public string Name { get; } = name;
+    internal string Name { get; } = name;
     internal IList<Node> Parameters { get; } = [];
+    //todo:3sin(x)
     internal override Expression BuildExpression(Expression? callerExpression = null)
     {
         if (callerExpression is null) throw new InvalidExpressionException("Callerexpression was null");
@@ -28,7 +29,7 @@ public class CallNode(string name) : Node(1)
         
         throw new Exception();
     }
-    public override void  Accept(IVisitor visitor)
+    public override void Accept(IVisitor visitor)
     {
         visitor.Visit(this);
     }

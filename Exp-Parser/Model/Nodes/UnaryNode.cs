@@ -1,6 +1,6 @@
 namespace Exp_Parser.Model.Nodes;
 
-public abstract class UnaryNode(int precedence) : Node(precedence)
+internal abstract class UnaryNode(int precedence) : Node(precedence)
 {
 
     internal Node? Child { get; private set; }

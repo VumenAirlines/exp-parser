@@ -3,84 +3,93 @@ using Exp_Parser.Model.Tokens;
 
 namespace Exp_Parser.Engine;
 using Model;
-internal class Tokenizer
+public class Tokenizer: IExpTokenizer
 {
-    private readonly TokenList _result = [];
-    private int _characterPosition;
-    public TokenList Tokenize(string input)
-    {
-       string trimmed = Regex.Replace(input, @"\s+", string.Empty);
-        for (_characterPosition = 0; _characterPosition < trimmed.Length;)
-            if (!IsValidToken(trimmed)) 
-                throw new ArgumentException($"Invalid token at position {_characterPosition + 1}.", nameof(input));
-        return _result;
-    }
-    private bool IsValidToken(string input) => 
-        IsNumber(input) || IsSymbol(input[_characterPosition].ToString()) || IsFunctionCall(input)||IsVariable(input);
+    private readonly Regex VariableRegex = new Regex(@"^[x]", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+    private readonly Regex WhiteSpaceRegex = new Regex(@"\s+", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+    private readonly Regex FunctionRegex = new Regex(@"^[\w]*", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+    private readonly Regex DecimalRegex = new Regex(@"^((\d*\.\d+)|(\d+\.\d*))", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+    private readonly Regex DigitRegex = new Regex(@"^\d+", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
 
-    private bool IsVariable(string input)
+    public TokenList Tokenize(string input) 
     {
-       return TryMakeToken(input[_characterPosition..], @"^[x]",x  => 
+        if (string.IsNullOrWhiteSpace(input)) throw new Exception();
+        
+        TokenList result = [];
+        
+        string trimmed = WhiteSpaceRegex.Replace(input, string.Empty);
+        
+        for (int characterPosition = 0; characterPosition < trimmed.Length;)
+            if (!IsValidToken(trimmed,result, ref characterPosition)) 
+                throw new ArgumentException($"Invalid token at position {characterPosition + 1}.", nameof(input));
+        return result;
+    }
+    private bool IsValidToken(string input,TokenList result, ref int position) => 
+        IsNumber(input,ref position,result) || IsSymbol(input[position].ToString(), ref position,result) || IsFunctionCall(input,ref position,result)||IsVariable(input,ref position, result);
+
+    private bool IsVariable(string input,ref int position,TokenList result)
+    {
+       return TryMakeToken(input[position..], ref position,result,VariableRegex,x  => 
             new CallToken(x,"Property"));
     }
-    private bool IsFunctionCall(string input)
+    private bool IsFunctionCall(string input,ref int position,TokenList result)
     {
-        return IsVariable(input) || TryMakeToken(input[_characterPosition..], @"^[\w]*", x=> new CallToken(x,"Function") );
+        return IsVariable(input, ref position,result) || TryMakeToken(input[position..],ref position,result,FunctionRegex, x=> new CallToken(x,"Function") );
     }
 
-    private bool IsSymbol(string token)
+    private bool IsSymbol(string token, ref int position,TokenList result)
     {
         string[] candidates = TokenList.SupportedOperators.Keys.Where(i => i.Length is 1).ToArray();
         string? op = candidates.FirstOrDefault(s => s == token);
         if (op is null) return false;
         switch (op)
         {
-            case "-" when IsUnary():
-                _result.Add(new OperationToken("[-]"));
+            case "-" when IsUnary(result):
+                result.Add(new OperationToken("[-]"));
                 break;
-            case "(" when IsFunctionParen():
+            case "(" when IsFunctionParen(result):
             default:
-                _result.Add(new OperationToken(token));
+                result.Add(new OperationToken(token));
                 break;
         }
-        _characterPosition += token.Length;
+        position += token.Length;
         return true;
     }
-    private bool IsUnary()
+    private bool IsUnary(TokenList result)
     {
-        return !_result.Any() || _result.TokenAt(_result.Count - 1) is OperationToken { ClosingBracket: false };
+        return !result.Any() || result.TokenAt(result.Count - 1) is OperationToken { ClosingBracket: false };
     }
 
-    private bool IsFunctionParen()
+    private bool IsFunctionParen(TokenList result)
     {
-        CallToken? token = (_result.TokenAt(_result.Count - 1) is CallToken candidate) ? candidate : null;
+        CallToken? token = result.TokenAt(result.Count - 1) as CallToken;
         return token != null;
     }
 
-    private bool IsNumber(string input)
+    private bool IsNumber(string input, ref int position,TokenList result)
     {
-        bool isDecimal = TryMakeToken(input[_characterPosition..], @"^((\d*\.\d+)|(\d+\.\d*))", x =>
+        bool isDecimal = TryMakeToken(input[position..],ref position,result ,DecimalRegex, x =>
         {
-            if (!double.TryParse(x, out double result))
+            if (!double.TryParse(x, out double value))
                 throw new Exception();
-            return new LiteralToken<double>(result);
+            return new LiteralToken<double>(value);
         });
         if (isDecimal) return true;
-        return TryMakeToken(input[_characterPosition..], @"^\d+",x  =>
+        return TryMakeToken(input[position..] ,ref position,result,DigitRegex,x  =>
         {
-            if (!double.TryParse(x, out double result))
+            if (!double.TryParse(x, out double value))
                 throw new Exception();
-            return new LiteralToken<double>(result);
+            return new LiteralToken<double>(value);
         });
     }
 
-    private bool TryMakeToken(string input, string regex, Func<string,Token?> make)
+    private bool TryMakeToken(string input,ref int position,TokenList result ,Regex regex, Func<string,Token?> make)
     {
-        Match match = Regex.Match(input, regex, RegexOptions.IgnoreCase);
+        Match match = regex.Match(input);
         if (!match.Success) return false;
         Token? token = make(match.Value);
-        if(token is not null) _result.Add(token);
-        _characterPosition += match.Length;
+        if(token is not null) result.Add(token);
+        position += match.Length;
         return true;
     }
     

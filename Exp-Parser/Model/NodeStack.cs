@@ -7,7 +7,7 @@ internal class NodeStack : Stack<Node>
     internal Node? Root => this.Any() ? Peek() : null;
 
     private BinaryNode? _prevBinary;
-//-1+4*5^3
+    //-1+4*5^3
     internal void Add(Node node)
     {
         if (!this.Any())
@@ -68,7 +68,7 @@ internal class NodeStack : Stack<Node>
         //Push(node);
     }
 
-    public void Reset()
+    internal void Reset()
     {
         Clear();
         LastAdded = null;

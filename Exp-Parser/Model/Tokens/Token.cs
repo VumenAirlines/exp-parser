@@ -3,7 +3,7 @@ using Exp_Parser.Model.Nodes;
 namespace Exp_Parser.Model.Tokens;
 
 
-    internal abstract class Token
+    public abstract class Token
     {
         internal abstract Node CreateNode();
 
